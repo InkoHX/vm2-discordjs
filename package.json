@@ -1,0 +1,27 @@
+{
+  "name": "vm2-discordjs",
+  "version": "1.0.0",
+  "description": "Run JavaScript code in VM",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InkoHX/vm2-discordjs.git"
+  },
+  "keywords": [],
+  "author": "InkoHX <inkogx@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/InkoHX/vm2-discordjs/issues"
+  },
+  "homepage": "https://github.com/InkoHX/vm2-discordjs#readme",
+  "dependencies": {
+    "discord.js": "^12.2.0",
+    "vm2": "^3.9.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
