@@ -1,14 +1,15 @@
 const { VM } = require('vm2')
-const { Client, Util, MessageAttachment } = require('discord.js')
+const { Client, MessageAttachment, APIMessage } = require('discord.js')
+const { inspect } = require('util')
 
 const client = new Client()
 
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/um
 const languages = ['js', 'javascript']
 const toContent = content => {
-  const text = Util.resolveString(content)
-  if (text.length <= 2000) return text
-  else new MessageAttachment(text, 'result.txt')
+  const text = inspect(content, { depth: null, breakLength: null })
+  if (text.length <= 2000) return APIMessage.transformOptions(text, { code: true, split: true })
+  else return APIMessage.transformOptions('実行結果が長すぎるのでテキストファイルに出力しました。', new MessageAttachment(text, 'result.txt'))
 }
 
 client.once('ready', () => console.log('Ready'))
@@ -26,9 +27,9 @@ client.on('message', message => {
     const vm = new VM({ timeout: 5000 })
     const result = vm.run(codeBlock.code)
 
-    return message.reply(toContent(result), { code: 'js' }).catch(console.error)
+    return message.reply(toContent(result)).catch(console.error)
   } catch (error) {
-    return message.reply(toContent(error), { code: 'js' }).catch(console.error)
+    return message.reply(toContent(error)).catch(console.error)
   }
 })
 
