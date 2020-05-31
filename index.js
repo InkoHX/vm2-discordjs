@@ -10,7 +10,7 @@ const languages = ['js', 'javascript']
 const toContent = content => {
   const text = inspect(content, { depth: null, maxArrayLength: null })
   if (text.length <= 2000) return APIMessage.transformOptions(text, { code: 'js', split: true })
-  else return APIMessage.transformOptions('実行結果が長すぎるのでテキストファイルに出力しました。', new MessageAttachment(text, 'result.txt'))
+  else return APIMessage.transformOptions('実行結果が長すぎるのでテキストファイルに出力しました。', new MessageAttachment(Buffer.from(text), 'result.txt'))
 }
 
 worker.on('error', console.error)
