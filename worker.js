@@ -1,6 +1,6 @@
-const workerpool = require('workerpool')
+const worker = require('workerpool').worker
 const { VM } = require('vm2')
 
 const run = code => new VM().run(code)
 
-workerpool.worker({ run })
+worker({ run })
