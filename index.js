@@ -14,7 +14,7 @@ const toContent = content => {
 
 client.once('ready', () => console.log('Ready'))
 
-client.on('message', async message => {
+client.on('message', message => {
   if (message.author.bot || message.system) return
   if (!message.content.toLowerCase().startsWith('>runjs')) return
   if (!codeBlockRegex.test(message.content)) return message.reply('コードを送信してください。')
