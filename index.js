@@ -1,9 +1,8 @@
 const { Client, MessageAttachment, APIMessage } = require('discord.js')
 const { inspect } = require('util')
-const { Worker } = require('worker_threads')
+const pool = require('workerpool').pool('./worker.js')
 
 const client = new Client()
-const worker = new Worker('./worker.js')
 
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/um
 const languages = ['js', 'javascript']
@@ -13,11 +12,9 @@ const toContent = content => {
   else return APIMessage.transformOptions('実行結果が長すぎるのでテキストファイルに出力しました。', new MessageAttachment(Buffer.from(text), 'result.txt'))
 }
 
-worker.on('error', console.error)
-
 client.once('ready', () => console.log('Ready'))
 
-client.on('message', message => {
+client.on('message', async message => {
   if (message.author.bot || message.system) return
   if (!message.content.toLowerCase().startsWith('>runjs')) return
   if (!codeBlockRegex.test(message.content)) return message.reply('コードを送信してください。')
@@ -28,12 +25,10 @@ client.on('message', message => {
   if (!languages.includes(codeBlock.lang)) return message.reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
     .catch(console.error)
 
-  worker.postMessage(codeBlock.code)
-
-  worker.on('message', value => {
-    return message.reply(toContent(value))
-      .catch(console.error)
-  })
+  pool.exec('run', [codeBlock.code])
+    .timeout(5000)
+    .then(value => message.reply(toContent(value)))
+    .catch(error => message.reply(error, { code: 'js' }))
 })
 
 client.login()

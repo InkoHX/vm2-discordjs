@@ -1,12 +1,6 @@
-const { parentPort } = require('worker_threads')
+const workerpool = require('workerpool')
 const { VM } = require('vm2')
 
-parentPort.on('message', value => {
-  try {
-    const vm = new VM({ timeout: 5000 })
+const run = code => new VM().run(code)
 
-    parentPort.postMessage(vm.run(value))
-  } catch (error) {
-    parentPort.postMessage(error)
-  }
-})
+workerpool.worker({ run })
