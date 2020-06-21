@@ -1,6 +1,6 @@
 const { Client, MessageAttachment, APIMessage } = require('discord.js')
 const { inspect } = require('util')
-const pool = require('workerpool').pool('./worker.js')
+const pool = require('workerpool').pool('./worker.js', { workerType: 'process' })
 
 const client = new Client()
 
