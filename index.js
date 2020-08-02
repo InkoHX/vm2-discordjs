@@ -1,8 +1,12 @@
-const { Client, MessageAttachment, APIMessage } = require('discord.js')
+const { Client, MessageAttachment, APIMessage, Intents } = require('discord.js')
 const { inspect } = require('util')
 const pool = require('workerpool').pool('./worker.js', { workerType: 'process' })
 
-const client = new Client()
+const client = new Client({
+  ws: {
+    intents: Intents.NON_PRIVILEGED
+  }
+})
 
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/um
 const languages = ['js', 'javascript']
