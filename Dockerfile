@@ -1,10 +1,13 @@
-FROM node:14-alpine
+FROM node:15-alpine
 
-ENV WORKDIR_PATH "/inkohx/app/vm2-discordjs"
+WORKDIR /inkohx/app/vm2-discordjs
 
-COPY . ${WORKDIR_PATH}
+COPY ./package-lock.json .
+COPY ./package.json .
 
-WORKDIR ${WORKDIR_PATH}
+# Source
+COPY ./worker.js .
+COPY ./index.js .
 
 RUN npm i --production && \
   npm cache clean --force
