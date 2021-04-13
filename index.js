@@ -12,6 +12,7 @@ const client = new Client({
 
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
+
 const toContent = content => {
   const text = inspect(content, { depth: null, maxArrayLength: null })
   if (text.length <= 2000)
@@ -31,7 +32,7 @@ client.on('message', message => {
   if (!codeBlockRegex.test(message.content))
     return message.reply('コードを送信してください。').catch(console.error)
 
-  const codeBlock = codeBlockRegex.exec(message.content).groups
+  const codeBlock = message.content.match(codeBlockRegex)?.groups ?? {}
 
   if (!languages.includes(codeBlock.lang))
     return message
