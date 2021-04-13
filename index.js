@@ -8,6 +8,12 @@ const client = new Client({
   ws: {
     intents: Intents.NON_PRIVILEGED,
   },
+  presence: {
+    activity: {
+      name: 'JavaScript',
+      type: 'PLAYING',
+    },
+  },
 })
 
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
