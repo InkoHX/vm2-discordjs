@@ -1,15 +1,24 @@
-FROM node:15-alpine
+FROM node:15-alpine AS build
 
-WORKDIR /inkohx/app/vm2-discordjs
+WORKDIR /dist
 
 COPY ./package-lock.json .
 COPY ./package.json .
-
-# Source
 COPY ./worker.js .
 COPY ./index.js .
 
-RUN npm i --production && \
-  npm cache clean --force
+RUN npm i --production
+
+######################
+
+FROM node:15-alpine
+
+WORKDIR /app
+
+COPY --from=build /dist .
+
+RUN adduser -S vm2
+
+USER vm2
 
 ENTRYPOINT [ "npm", "start" ]
