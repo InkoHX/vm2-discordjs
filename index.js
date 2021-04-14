@@ -19,9 +19,9 @@ const client = new Client({
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
 
-const toContent = content => {
+const parseResult = content => {
   const text = inspect(content, { depth: null, maxArrayLength: null })
-  if (text.length <= 1900)
+  if (text.length <= 2000)
     return APIMessage.transformOptions(text, { code: 'js' })
   else
     return APIMessage.transformOptions(
@@ -30,35 +30,71 @@ const toContent = content => {
     )
 }
 
+/**
+ * リアクションで削除可能なメッセージを送信します。
+ * @param {import('discord.js').Message} message
+ * @param {import('discord.js').APIMessageContentResolvable | import('discord.js').MessageAdditions | import('discord.js').MessageOptions} content
+ */
+const sendDeleteableMessage = async (message, content) => {
+  const replies = await message.reply(content)
+  const wastebasket = '🗑️'
+  const filter = (reaction, user) =>
+    reaction.emoji.name === wastebasket && user.id === message.author.id
+
+  if (Array.isArray(replies)) {
+    const lastReply = replies[replies.length - 1]
+
+    lastReply
+      .react(wastebasket)
+      .then(reaction =>
+        reaction.message.awaitReactions(filter, {
+          idle: 60000,
+          errors: ['idle'],
+        })
+      )
+      .then(() =>
+        Promise.all(replies.map(reply => reply.delete()).push(message.delete()))
+      )
+      .catch(() => lastReply.reactions.removeAll())
+  } else {
+    /** @type {import('discord.js').Message} */
+    const reply = replies
+
+    reply
+      .react(wastebasket)
+      .then(reaction =>
+        reaction.message.awaitReactions(filter, {
+          idle: 60000,
+          errors: ['idle'],
+        })
+      )
+      .then(() => Promise.all([sender.delete(), reply.delete()]))
+      .catch(() => reply.reactions.removeAll())
+  }
+}
+
 client.once('ready', () => console.log('Ready'))
 
 client.on('message', message => {
-  (async () => {
-    if (message.author.bot || message.system) return
-    if (!message.content.toLowerCase().startsWith('>runjs')) return
-    if (!codeBlockRegex.test(message.content))
-      return message.reply('コードを送信してください。')
+  if (message.author.bot || message.system) return
+  if (!message.content.toLowerCase().startsWith('>runjs')) return
+  if (!codeBlockRegex.test(message.content))
+    return message.reply('コードを送信してください。').catch(console.error)
 
-    const codeBlock = message.content.match(codeBlockRegex)?.groups ?? {}
+  const codeBlock = message.content.match(codeBlockRegex)?.groups ?? {}
 
-    if (!languages.includes(codeBlock.lang))
-      return message.reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
+  if (!languages.includes(codeBlock.lang))
+    return message
+      .reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
+      .catch(console.error)
 
-    const result = await pool
-      .exec('run', [codeBlock.code])
-      .timeout(5000)
-
-    const filter = (reaction, user) => user.id === message.author.id && reaction.emoji.name === '🗑️'
-    const resultMessage = await message.reply(toContent(result))
-
-    resultMessage.awaitReactions(filter, {
-      time: 60000,
-      errors: ['time']
-    })
-      .then(() => Promise.all([resultMessage.delete(), message.delete()]))
-      .catch(() => resultMessage.reactions.removeAll())
-  })()
-    .catch(reason => message.reply(reason, { code: 'js' }))
+  pool
+    .exec('run', [codeBlock.code])
+    .timeout(5000)
+    .then(result => sendDeleteableMessage(message, parseResult(result)))
+    .catch(error =>
+      sendDeleteableMessage(message, { content: error, code: 'js' })
+    )
 })
 
 client.login().catch(console.error)
