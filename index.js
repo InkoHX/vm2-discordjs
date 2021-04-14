@@ -70,7 +70,7 @@ const sendDeleteableMessage = async (message, content) => {
           errors: ['idle'],
         })
       )
-      .then(() => Promise.all([sender.delete(), reply.delete()]))
+      .then(() => Promise.all([message.delete(), reply.delete()]))
       .catch(() => reply.reactions.removeAll())
   }
 }
