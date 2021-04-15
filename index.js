@@ -49,6 +49,7 @@ const sendDeleteableMessage = async (message, content) => {
       .then(reaction =>
         reaction.message.awaitReactions(filter, {
           idle: 60000,
+          max: 1,
           errors: ['idle'],
         })
       )
@@ -65,10 +66,11 @@ const sendDeleteableMessage = async (message, content) => {
       .then(reaction =>
         reaction.message.awaitReactions(filter, {
           idle: 60000,
+          max: 1,
           errors: ['idle'],
         })
       )
-      .then(() => Promise.all([sender.delete(), reply.delete()]))
+      .then(() => Promise.all([message.delete(), reply.delete()]))
       .catch(() => reply.reactions.removeAll())
   }
 }
