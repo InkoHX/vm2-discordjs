@@ -2,9 +2,9 @@
   "name": "vm2-discordjs",
   "version": "1.0.0",
   "description": "Run JavaScript code in VM",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node ./index.js",
+    "start": "node ./src/index.js",
     "format": "prettier --write .",
     "check": "prettier --check .",
     "test": "echo \"Error: no test specified\" && exit 1"

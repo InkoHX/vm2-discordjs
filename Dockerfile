@@ -4,8 +4,7 @@ WORKDIR /dist
 
 COPY ./package-lock.json .
 COPY ./package.json .
-COPY ./worker.js .
-COPY ./index.js .
+COPY ./src ./src
 
 RUN npm i --production
 
