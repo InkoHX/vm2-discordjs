@@ -2,7 +2,8 @@ require('./structures/message')
 
 const { Client, MessageAttachment, APIMessage, Intents } = require('discord.js')
 const { inspect } = require('util')
-const pool = require('workerpool').pool('./worker.js', {
+const path = require('path')
+const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
 })
 
@@ -51,9 +52,7 @@ client.on('message', message => {
     .exec('run', [codeBlock.code])
     .timeout(5000)
     .then(result => message.sendDeleteable(parseResult(result)))
-    .catch(error =>
-      message.sendDeleteable(error, { code: 'js' })
-    )
+    .catch(error => message.sendDeleteable(error, { code: 'js' }))
 })
 
 client.login().catch(console.error)
