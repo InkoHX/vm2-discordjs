@@ -1,6 +1,6 @@
 {
   "name": "vm2-discordjs",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "description": "Run JavaScript code in VM",
   "main": "src/index.js",
   "scripts": {
