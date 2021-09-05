@@ -1,7 +1,6 @@
 require('./structures/message')
 
 const { Client, MessageAttachment, APIMessage, Intents } = require('discord.js')
-const { inspect } = require('util')
 const path = require('path')
 const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
@@ -22,14 +21,13 @@ const client = new Client({
 const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
 
-const parseResult = content => {
-  const text = inspect(content, { depth: null, maxArrayLength: null })
-  if (text.length <= 2000)
-    return APIMessage.transformOptions(text, { code: 'js' })
+const toMessageOptions = content => {
+  if (content.length <= 2000)
+    return APIMessage.transformOptions(content, { code: 'js' })
   else
     return APIMessage.transformOptions(
       '実行結果が長すぎるのでテキストファイルに出力しました。',
-      new MessageAttachment(Buffer.from(text), 'result.txt')
+      new MessageAttachment(Buffer.from(content), 'result.txt')
     )
 }
 
@@ -51,7 +49,7 @@ client.on('message', message => {
   pool
     .exec('run', [codeBlock.code])
     .timeout(5000)
-    .then(result => message.sendDeleteable(parseResult(result)))
+    .then(result => message.sendDeleteable(toMessageOptions(result)))
     .catch(error => message.sendDeleteable(error, { code: 'js' }))
 })
 
