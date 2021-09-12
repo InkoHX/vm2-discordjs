@@ -15,7 +15,7 @@ const run = async code => {
     }
   })
   const result = await vm.run(code)
-  const VMRegExp = vm.run("RegExp")
+  const VMRegExp = vm.run("RegExp"),
   VMRegExpProtoToString = VMRegExp.prototype.toString
   Object.defineProperty(VMRegExp.prototype, inspect.custom, { 
     value(_, options) {
