@@ -26,13 +26,29 @@ const run = async code => {
       BigUint64Array,
     },
   })
-  const result = await vm.run(code)
-  const VMRegExp = vm.run('RegExp'),
-    VMRegExpProtoToString = VMRegExp.prototype.toString
-  Object.defineProperty(VMRegExp.prototype, inspect.custom, {
+  const vmRegExpPrototype = vm.run('RegExp').prototype,
+    vmRegExpProtoToString = vmRegExpPrototype.toString
+  const primitiveTypes = [
+    'Number',
+    'String',
+    'Boolean',
+    'Symbol',
+    'BigInt',
+  ].map(type => {
+    const { prototype } = vm.run(type)
+    return [type, prototype, prototype.valueOf]
+  })
+  const promiseProtoThen = vm.run('Promise').prototype.then
+
+  let result = vm.run(code)
+  try {
+    result = (await promiseProtoThen.call(result, a => [a]))[0]
+  } catch {}
+
+  Object.defineProperty(vmRegExpPrototype, inspect.custom, {
     value(_, options) {
       try {
-        return VMRegExpProtoToString.call(this)
+        return vmRegExpProtoToString.call(this)
       } catch {
         return inspect(
           Object.defineProperty(this, inspect.custom, { value: void 0 }),
@@ -41,10 +57,8 @@ const run = async code => {
       }
     },
   })
-  for (const type of ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']) {
-    const ctor = vm.run(type),
-      toPrimitive = ctor.prototype.valueOf
-    Object.defineProperty(ctor.prototype, inspect.custom, {
+  for (const [type, prototype, toPrimitive] of primitiveTypes) {
+    Object.defineProperty(prototype, inspect.custom, {
       value(_, options) {
         try {
           return `[${type}: ${inspect(toPrimitive.call(this))}]`
@@ -57,6 +71,7 @@ const run = async code => {
       },
     })
   }
+
   return inspect(result, { depth: null, maxArrayLength: null })
 }
 
