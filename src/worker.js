@@ -38,12 +38,8 @@ const run = async code => {
     const { prototype } = vm.run(type)
     return [type, prototype, prototype.valueOf]
   })
-  const promiseProtoThen = vm.run('Promise').prototype.then
-
+  
   let result = vm.run(code)
-  try {
-    result = (await promiseProtoThen.call(result, a => [a]))[0]
-  } catch {}
 
   Object.defineProperty(vmRegExpPrototype, inspect.custom, {
     value(_, options) {
