@@ -2,17 +2,16 @@ name: Docker
 
 on:
   push:
-    branches: [ master ]
-    tags: [ 'v*.*.*' ]
+    branches: [master]
+    tags: ['v*.*.*']
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   IMAGE_NAME: inkohx/vm2-discordbot
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
