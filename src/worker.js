@@ -39,7 +39,12 @@ const run = async code => {
     return [type, prototype, prototype.valueOf]
   })
 
-  const result = vm.run(code)
+  let result
+  try {
+    result = vm.run(code)
+  } catch (ex) {
+    return Error.prototype.toString.call(ex)
+  }
 
   Object.defineProperty(vmRegExpPrototype, inspect.custom, {
     value(_, options) {
