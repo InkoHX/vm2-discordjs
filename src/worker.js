@@ -41,7 +41,7 @@ const run = async code => {
 
   let result
   try {
-    result = vm.run(code)
+    result = await vm.run(code)
   } catch (ex) {
     return Error.prototype.toString.call(ex)
   }
