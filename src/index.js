@@ -1,19 +1,16 @@
 require('./structures/message')
 
-const {
-  Client,
-  MessageAttachment,
-  MessagePayload,
-  Intents,
-} = require('discord.js')
+const { Client, MessageAttachment, MessagePayload, Intents, } = require('discord.js')
 const path = require('path')
 const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
 })
+const intents = Intents.FLAGS.GUILDS|Intents.FLAGS.GUILD_MESSAGES|Intents.FLAGS.GUILD_MESSAGE_REACTIONS;
 
 const client = new Client({
+  intents,
   ws: {
-    intents: Intents.NON_PRIVILEGED,
+    intents: intents,
   },
   presence: {
     activity: {
@@ -21,9 +18,9 @@ const client = new Client({
       type: 'PLAYING',
     },
   },
-})
+});
 
-const Blockcontent = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
+const BlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
 const toMessageOptions = content => {
   if (content.length <= 2000) return codeBlock('js', content)
@@ -41,13 +38,13 @@ const toMessageOptions = content => {
 
 client.once('ready', () => console.log('Ready'))
 
-client.on('message', message => {
+client.on('messageCreate', message => {
   if (message.author.bot || message.system) return
   if (!message.content.toLowerCase().startsWith('>runjs')) return
   if (!BlockRegex.test(message.content))
     return message.reply('コードを送信してください。').catch(console.error)
 
-  const Blockcontent = message.content.match(BlockRegex)?.groups ?? {}
+  const Blockcontent = message.content.match(BlockRegex)?.groups ?? {};
   if (!languages.includes(Blockcontent.lang))
     return message
       .reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
@@ -58,6 +55,6 @@ client.on('message', message => {
     .timeout(5000)
     .then(result => message.sendDeletable(toMessageOptions(result)))
     .catch(error => message.sendDeletable(codeBlock('js', error)))
-})
+});
 
 client.login().catch(console.error)
