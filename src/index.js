@@ -1,6 +1,6 @@
 require('./structures/message')
 
-const { Client, MessageAttachment, APIMessage, Intents } = require('discord.js')
+const { Client, MessageAttachment, MessagePayload, Intents } = require('discord.js')
 const path = require('path')
 const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
@@ -18,17 +18,16 @@ const client = new Client({
   },
 })
 
-const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
+const Blockcontent = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
-
 const toMessageOptions = content => {
   if (content.length <= 2000)
-    return APIMessage.transformOptions(content, { code: 'js' })
+    return codeBlock("js", content);
   else
-    return APIMessage.transformOptions(
-      '実行結果が長すぎるのでテキストファイルに出力しました。',
-      new MessageAttachment(Buffer.from(content), 'result.txt')
-    )
+    return MessagePayload.create(message.channel, {
+      content: "実行結果が長すぎるのでテキストファイルに出力しました。",
+      attachment: [new MessageAttachment(codeBlock("js", Buffer.from(content)), "result.js")]
+    });
 }
 
 client.once('ready', () => console.log('Ready'))
@@ -36,21 +35,20 @@ client.once('ready', () => console.log('Ready'))
 client.on('message', message => {
   if (message.author.bot || message.system) return
   if (!message.content.toLowerCase().startsWith('>runjs')) return
-  if (!codeBlockRegex.test(message.content))
-    return message.reply('コードを送信してください。').catch(console.error)
+        if (!BlockRegex.test(message.content))
+        return message.reply('コードを送信してください。').catch(console.error);
 
-  const codeBlock = message.content.match(codeBlockRegex)?.groups ?? {}
-
-  if (!languages.includes(codeBlock.lang))
-    return message
-      .reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
-      .catch(console.error)
-
-  pool
-    .exec('run', [codeBlock.code])
-    .timeout(5000)
-    .then(result => message.sendDeleteable(toMessageOptions(result)))
-    .catch(error => message.sendDeleteable(error, { code: 'js' }))
+      const Blockcontent = message.content.match(BlockRegex) ?.groups ?? {};
+      if (!languages.includes(Blockcontent.lang))
+        return message
+          .reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
+          .catch(console.error);
+      
+      pool
+        .exec('run', [Blockcontent.code])
+        .timeout(5000)
+        .then(result => message.sendDeletable(toMessageOptions(result)))
+        .catch(error => message.sendDeletable(codeBlock('js', error)));
 })
 
 client.login().catch(console.error)
