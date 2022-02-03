@@ -26,7 +26,7 @@ const client = new Client({
   },
 })
 
-const codeBlockRegex = /^`{3}(?<lang>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
+const codeBlockRegex = /^`{3}(?<language>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
 const toMessageOptions = content => {
   if (content.length <= 2000) return codeBlock('js', content)
