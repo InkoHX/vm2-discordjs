@@ -27,7 +27,7 @@
     "workerpool": "^6.1.5"
   },
   "engines": {
-    "node": ">=16.6.0"
+    "node": ">=16.9.0"
   },
   "devDependencies": {
     "prettier": "2.4.1"
