@@ -18,7 +18,6 @@ const intents =
 
 const client = new Client({
   intents,
-  ws: {
   presence: {
     activity: {
       name: 'JavaScript',
