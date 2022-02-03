@@ -15,9 +15,9 @@ Message.prototype.sendDeletable = async function (content) {
     reply
       .awaitReactions({
         reactionFilter,
-        max: 2,
-        time: 60000,
-        errors: ['time'],
+        max: 1,
+        idle: 60000,
+        errors: ['idle'],
       })
       .then(collection => collection.first())
 
@@ -26,12 +26,11 @@ Message.prototype.sendDeletable = async function (content) {
       .awaitMessages({
         messageFilter,
         max: 1,
-        time: 60000,
-        errors: ['time'],
+        idle: 60000,
+        errors: ['idle'],
       })
       .then(collection => collection.first())
-
-  await reply.react(wastebasket)
+  
   const run = async () => {
     const reaction = await awaitReaction().catch(() => null)
     if (!reaction) return reply.reactions.removeAll()
@@ -72,7 +71,7 @@ Message.prototype.sendDeletable = async function (content) {
     ])
     return run()
   }
-  run().catch(console.error)
+  reply.react(wastebasket)
+    .then(() => run())
+    .catch(console.error)
 }
-
-module.exports = Message
