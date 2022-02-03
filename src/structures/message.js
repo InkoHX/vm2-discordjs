@@ -51,10 +51,12 @@ Message.prototype.sendDeletable = async function (content) {
       ],
     })
     const input = await awaitOptionInput().catch(() => 0)
-    if (!input) return
-    const option = parseInt(input.content.trim())
+    const option = input === 0 ? 0 : parseInt(input.content.trim())
     if (option === 1)
-      return Promise.all([reply.delete(), question.delete(), input.delete()])
+      return Promise.all([
+        reply.delete(),
+        question.delete(),
+        input.delete()])
     if (option === 2)
       return Promise.all([
         reply.delete(),
