@@ -1,16 +1,16 @@
-const { Message, MessageEmbed } = require('discord.js');
+const { Message, MessageEmbed } = require('discord.js')
 
 Message.prototype.sendDeletable = async function (content) {
-  const reply = await this.reply(content);
-  const wastebasket = '🗑️';
+  const reply = await this.reply(content)
+  const wastebasket = '🗑️'
   const reactionFilter = (reaction, user) =>
-    reaction.emoji.name === wastebasket && user.id === this.author.id;
+    reaction.emoji.name === wastebasket && user.id === this.author.id
   const messageFilter = receiveMessage => {
-    const num = parseInt(receiveMessage.content.trim());
-    if (Number.isNaN(num)) return false;
-    if (num >= 0 && num <= 2) return true;
-    else return false;
-  };
+    const num = parseInt(receiveMessage.content.trim())
+    if (Number.isNaN(num)) return false
+    if (num >= 0 && num <= 2) return true
+    else return false
+  }
   const awaitReaction = () =>
     reply
       .awaitReactions({
@@ -19,7 +19,7 @@ Message.prototype.sendDeletable = async function (content) {
         time: 60000,
         errors: ['time'],
       })
-      .then(collection => collection.first());
+      .then(collection => collection.first())
 
   const awaitOptionInput = () =>
     this.channel
@@ -29,12 +29,12 @@ Message.prototype.sendDeletable = async function (content) {
         time: 60000,
         errors: ['time'],
       })
-      .then(collection => collection.first());
+      .then(collection => collection.first())
 
-  await reply.react(wastebasket);
+  await reply.react(wastebasket)
   const run = async () => {
-    const reaction = await awaitReaction().catch(() => null);
-    if (!reaction) return reply.reactions.removeAll();
+    const reaction = await awaitReaction().catch(() => null)
+    if (!reaction) return reply.reactions.removeAll()
 
     const question = await this.channel.send({
       embeds: [
@@ -49,27 +49,28 @@ Message.prototype.sendDeletable = async function (content) {
             ].join('\n')
           ),
       ],
-    });
-    const input = await awaitOptionInput().catch(() => 0);
-    const option = parseInt(input.content.trim());
+    })
+    const input = await awaitOptionInput().catch(() => 0)
+    if (!input) return
+    const option = parseInt(input.content.trim())
     if (option === 1)
-      return Promise.all([reply.delete(), question.delete(), input.delete()]);
+      return Promise.all([reply.delete(), question.delete(), input.delete()])
     if (option === 2)
       return Promise.all([
         reply.delete(),
         question.delete(),
         input.delete(),
         this.delete(),
-      ]);
+      ])
 
     await Promise.all([
       reaction.users.remove(this.author),
       question.delete(),
       input.delete(),
-    ]);
-    return run();
-  };
-  run().catch(console.error);
-};
+    ])
+    return run()
+  }
+  run().catch(console.error)
+}
 
-module.exports = Message;
+module.exports = Message

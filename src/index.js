@@ -34,7 +34,7 @@ const languages = ['js', 'javascript']
 const toMessageOptions = content => {
   if (content.length <= 2000) return codeBlock('js', content)
   else {
-    const File = new MessageAttachment(Buffer.from(content), "result.txt")
+    const File = new MessageAttachment(Buffer.from(content), 'result.txt')
     return MessagePayload.create(message.channel, {
       content: '実行結果が長すぎるのでテキストファイルに出力しました。',
       files: [file],
