@@ -37,7 +37,7 @@ const toMessageOptions = content => {
     const File = new MessageAttachment(Buffer.from(content), 'result.txt')
     return MessagePayload.create(message.channel, {
       content: '実行結果が長すぎるのでテキストファイルに出力しました。',
-      files: [file],
+      files: [File],
     })
   }
 }
@@ -51,7 +51,7 @@ client.on('messageCreate', message => {
     return message.reply('コードを送信してください。').catch(console.error)
 
   const BlockContent = message.content.match(BlockRegex)?.groups ?? {}
-  if (!languages.includes(Blockcontent.lang))
+  if (!languages.includes(BlockContent.lang))
     return message
       .reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
       .catch(console.error)
