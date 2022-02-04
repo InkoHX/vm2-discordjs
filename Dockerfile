@@ -1,4 +1,4 @@
-FROM node:15-alpine AS build
+FROM node:16-alpine AS build
 
 WORKDIR /dist
 
@@ -10,7 +10,7 @@ RUN npm i --production
 
 ######################
 
-FROM node:15-alpine
+FROM node:16-alpine
 
 WORKDIR /app
 
