@@ -14,7 +14,7 @@ Message.prototype.sendDeletable = async function (content) {
   const awaitReaction = () =>
     reply
       .awaitReactions({
-        reactionFilter,
+        filter: reactionFilter,
         max: 1,
         idle: 60000,
         errors: ['idle'],
@@ -24,7 +24,7 @@ Message.prototype.sendDeletable = async function (content) {
   const awaitOptionInput = () =>
     this.channel
       .awaitMessages({
-        messageFilter,
+        filter: messageFilter,
         max: 1,
         idle: 60000,
         errors: ['idle'],
