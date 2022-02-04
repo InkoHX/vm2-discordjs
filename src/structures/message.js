@@ -30,7 +30,7 @@ Message.prototype.sendDeletable = async function (content) {
         errors: ['idle'],
       })
       .then(collection => collection.first())
-  
+
   const run = async () => {
     const reaction = await awaitReaction().catch(() => null)
     if (!reaction) return reply.reactions.removeAll()
@@ -52,10 +52,7 @@ Message.prototype.sendDeletable = async function (content) {
     const input = await awaitOptionInput().catch(() => 0)
     const option = input === 0 ? 0 : parseInt(input.content.trim())
     if (option === 1)
-      return Promise.all([
-        reply.delete(),
-        question.delete(),
-        input.delete()])
+      return Promise.all([reply.delete(), question.delete(), input.delete()])
     if (option === 2)
       return Promise.all([
         reply.delete(),
@@ -71,7 +68,8 @@ Message.prototype.sendDeletable = async function (content) {
     ])
     return run()
   }
-  reply.react(wastebasket)
+  reply
+    .react(wastebasket)
     .then(() => run())
     .catch(console.error)
 }
