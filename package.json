@@ -23,12 +23,12 @@
   "dependencies": {
     "discord.js": "^13.6.0",
     "vm2": "^3.9.5",
-    "workerpool": "^6.1.5"
+    "workerpool": "^6.2.0"
   },
   "engines": {
     "node": ">=16.6.0"
   },
   "devDependencies": {
-    "prettier": "2.4.1"
+    "prettier": "^2.4.1"
   }
 }
