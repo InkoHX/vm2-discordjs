@@ -20,10 +20,12 @@ const intents =
 const client = new Client({
   intents,
   presence: {
-    activity: {
-      name: 'JavaScript',
-      type: 'PLAYING',
-    },
+    activities: [
+      {
+        name: 'JavaScript',
+        type: 'PLAYING',
+      },
+    ],
   },
 })
 
