@@ -24,6 +24,8 @@ const run = async code => {
       Float64Array,
       BigInt64Array,
       BigUint64Array,
+      Atomics,
+      DataView,
     },
   })
   const vmRegExpPrototype = vm.run('RegExp').prototype,
