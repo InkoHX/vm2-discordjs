@@ -39,17 +39,32 @@ const run = async code => {
       }),
     },
   })
-  const vmRegExpPrototype = vm.run('RegExp').prototype,
-    vmRegExpProtoToString = vmRegExpPrototype.toString
-  const primitiveTypes = [
-    'Number',
-    'String',
-    'Boolean',
-    'Symbol',
-    'BigInt',
-  ].map(type => {
+
+  const { call } = Function.prototype
+
+  for (const type of ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']) {
     const { prototype } = vm.run(type)
-    return [type, prototype, prototype.valueOf]
+    const valueOf = call.bind(prototype.valueOf)
+    const toString = call.bind(prototype.toString)
+    Object.defineProperty(prototype, inspect.custom, {
+      value() {
+        try {
+          return `[${type}: ${toString(valueOf(this))}]`
+        } catch {}
+        return this
+      },
+    })
+  }
+
+  const vmRegExpPrototype = vm.run('RegExp').prototype,
+    vmRegExpProtoToString = call.bind(vmRegExpPrototype.toString)
+  Object.defineProperty(vmRegExpPrototype, inspect.custom, {
+    value() {
+      try {
+        return vmRegExpProtoToString(this)
+      } catch {}
+      return this
+    },
   })
 
   let result
@@ -57,33 +72,6 @@ const run = async code => {
     result = await vm.run(code)
   } catch (ex) {
     return [consoleOutput.join(''), Error.prototype.toString.call(ex)]
-  }
-
-  Object.defineProperty(vmRegExpPrototype, inspect.custom, {
-    value(_, options) {
-      try {
-        return vmRegExpProtoToString.call(this)
-      } catch {
-        return inspect(
-          Object.defineProperty(this, inspect.custom, { value: void 0 }),
-          options
-        )
-      }
-    },
-  })
-  for (const [type, prototype, toPrimitive] of primitiveTypes) {
-    Object.defineProperty(prototype, inspect.custom, {
-      value(_, options) {
-        try {
-          return `[${type}: ${inspect(toPrimitive.call(this))}]`
-        } catch {
-          return inspect(
-            Object.defineProperty(this, inspect.custom, { value: void 0 }),
-            options
-          )
-        }
-      },
-    })
   }
 
   return [
