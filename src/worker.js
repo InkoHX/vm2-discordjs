@@ -1,8 +1,14 @@
 const { worker } = require('workerpool')
 const { VM } = require('vm2')
 const { inspect } = require('util')
+const { Console } = console
+const { Writable } = require('stream')
 
 const run = async code => {
+  const consoleOutput = []
+  const outStream = Object.defineProperty(new Writable(), 'write', {
+    value: chunk => consoleOutput.push(chunk),
+  })
   const vm = new VM({
     sandbox: {
       Set,
@@ -26,6 +32,11 @@ const run = async code => {
       BigUint64Array,
       Atomics,
       DataView,
+      console: new Console({
+        stdout: outStream,
+        stderr: outStream,
+        inspectOptions: { depth: null, maxArrayLength: null },
+      }),
     },
   })
   const vmRegExpPrototype = vm.run('RegExp').prototype,
@@ -45,7 +56,7 @@ const run = async code => {
   try {
     result = await vm.run(code)
   } catch (ex) {
-    return Error.prototype.toString.call(ex)
+    return [consoleOutput.join(''), Error.prototype.toString.call(ex)]
   }
 
   Object.defineProperty(vmRegExpPrototype, inspect.custom, {
@@ -75,7 +86,10 @@ const run = async code => {
     })
   }
 
-  return inspect(result, { depth: null, maxArrayLength: null })
+  return [
+    consoleOutput.join(''),
+    inspect(result, { depth: null, maxArrayLength: null }),
+  ]
 }
 
 worker({ run })
