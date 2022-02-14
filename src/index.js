@@ -31,9 +31,12 @@ const client = new Client({
 const codeBlockRegex = /^`{3}(?<language>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
 const toMessageOptions = (consoleOutput, result) => {
-  const wrapped =
-    (consoleOutput && Formatters.codeBlock('js', consoleOutput)) +
-    Formatters.codeBlock('js', result)
+  const wrapped = [
+    Formatters.bold('コンソール'),
+    Formatters.codeBlock('js', consoleOutput || '出力無し'),
+    Formatters.bold('結果'),
+    Formatters.codeBlock('js', result),
+  ].join('\n')
   if (wrapped.length <= 2000) return wrapped
   const files = [new MessageAttachment(Buffer.from(result), 'result.txt')]
   if (consoleOutput)
