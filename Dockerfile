@@ -6,7 +6,7 @@ COPY ./package-lock.json .
 COPY ./package.json .
 COPY ./src ./src
 
-RUN npm i --production
+RUN npm ci --production
 
 ######################
 
@@ -16,8 +16,4 @@ WORKDIR /app
 
 COPY --from=build /dist .
 
-RUN adduser -S vm2
-
-USER vm2
-
-ENTRYPOINT [ "npm", "start" ]
+CMD [ "./src/index.js" ]
