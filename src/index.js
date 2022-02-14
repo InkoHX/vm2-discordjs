@@ -3,7 +3,6 @@ require('./structures/message')
 const {
   Client,
   MessageAttachment,
-  MessagePayload,
   Intents,
   Formatters,
 } = require('discord.js')
