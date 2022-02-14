@@ -1,6 +1,12 @@
 require('./structures/message')
 
-const { Client, MessageAttachment, Intents, Formatters, Util } = require('discord.js')
+const {
+  Client,
+  MessageAttachment,
+  Intents,
+  Formatters,
+  Util,
+} = require('discord.js')
 const path = require('path')
 const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
@@ -28,7 +34,10 @@ const languages = ['js', 'javascript']
 const toMessageOptions = (consoleOutput, result) => {
   const wrapped = [
     Formatters.bold('コンソール'),
-    Formatters.codeBlock('js', consoleOutput.replaceAll('`', '`\u200b') || '出力無し'),
+    Formatters.codeBlock(
+      'js',
+      consoleOutput.replaceAll('`', '`\u200b') || '出力無し'
+    ),
     Formatters.bold('結果'),
     Formatters.codeBlock('js', result.replaceAll('`', '`\u200b')),
   ].join('\n')
