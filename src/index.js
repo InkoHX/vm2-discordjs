@@ -1,12 +1,6 @@
 require('./structures/message')
 
-const {
-  Client,
-  MessageAttachment,
-  Intents,
-  Formatters,
-  Util,
-} = require('discord.js')
+const { Client, MessageAttachment, Intents, Formatters } = require('discord.js')
 const path = require('path')
 const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
