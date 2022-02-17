@@ -22,6 +22,7 @@
   "homepage": "https://github.com/InkoHX/vm2-discordjs#readme",
   "dependencies": {
     "discord.js": "^13.6.0",
+    "typescript": "^4.5.5",
     "vm2": "^3.9.8",
     "workerpool": "^6.2.0"
   },

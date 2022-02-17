@@ -1,4 +1,5 @@
 require('./structures/message')
+const ts = require('typescript')
 
 const { Client, MessageAttachment, Intents, Formatters } = require('discord.js')
 const path = require('path')
@@ -24,7 +25,9 @@ const client = new Client({
 })
 
 const codeBlockRegex = /^`{3}(?<language>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
-const languages = ['js', 'javascript']
+const jsLanguages = ['js', 'javascript']
+const tsLanguages = ['ts', 'typescript']
+const languages = [...jsLanguages, ...tsLanguages]
 const toMessageOptions = (consoleOutput, result) => {
   if (consoleOutput.split('\n').length <= 100) {
     let wrapped = Formatters.codeBlock('js', result.replaceAll('`', '`\u200b'))
@@ -57,11 +60,15 @@ client.on('messageCreate', message => {
   if (!codeBlockRegex.test(message.content))
     return message.reply('コードを送信してください。').catch(console.error)
 
-  const { language, code } = message.content.match(codeBlockRegex)?.groups ?? {}
+  let { language, code } = message.content.match(codeBlockRegex)?.groups ?? {}
   if (!languages.includes(language))
     return message
       .reply(`言語識別子が**${languages.join(', ')}**である必要があります。`)
       .catch(console.error)
+
+  if (tsLanguages.includes(language)) {
+    code = ts.transpile(code)
+  }
 
   pool
     .exec('run', [code])
