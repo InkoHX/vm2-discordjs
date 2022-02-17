@@ -4,6 +4,13 @@ const { inspect } = require('util')
 const { Console } = console
 const { Writable } = require('stream')
 
+const errorToString = err => {
+  if (typeof err === 'object' && err instanceof Error) {
+    return Error.prototype.toString.call(err)
+  }
+  return 'Thrown: ' + inspect(err, { depth: null, maxArrayLength: null })
+}
+
 const run = async code => {
   const consoleOutput = []
   const outStream = Object.defineProperty(new Writable(), 'write', {
@@ -45,11 +52,10 @@ const run = async code => {
   for (const type of ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']) {
     const { prototype } = vm.run(type)
     const valueOf = call.bind(prototype.valueOf)
-    const toString = call.bind(prototype.toString)
     Object.defineProperty(prototype, inspect.custom, {
       value() {
         try {
-          return `[${type}: ${toString(valueOf(this))}]`
+          return `[${type}: ${inspect(valueOf(this))}]`
         } catch {}
         return this
       },
@@ -71,11 +77,11 @@ const run = async code => {
   try {
     result = await vm.run(code)
   } catch (ex) {
-    return [consoleOutput.join(''), Error.prototype.toString.call(ex)]
+    return [consoleOutput.join('').trim(), errorToString(ex)]
   }
 
   return [
-    consoleOutput.join(''),
+    consoleOutput.join('').trim(),
     inspect(result, { depth: null, maxArrayLength: null }),
   ]
 }
