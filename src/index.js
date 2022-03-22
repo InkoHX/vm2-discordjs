@@ -36,7 +36,8 @@ const toMessageOptions = (consoleOutput, result) => {
         Formatters.bold('結果') +
         wrapped
     }
-    if (wrapped.length <= 2000) return wrapped
+    if (wrapped.length <= 2000)
+      return { content: wrapped, allowedMentions: { repliedUser: true } }
   }
   const files = [new MessageAttachment(Buffer.from(result), 'result.txt')]
   if (consoleOutput)
