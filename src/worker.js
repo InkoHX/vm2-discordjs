@@ -1,3 +1,5 @@
+'use strict'
+
 const { worker } = require('workerpool')
 const { VM } = require('vm2')
 const { inspect } = require('util')
@@ -11,6 +13,36 @@ const errorToString = err => {
   return 'Thrown: ' + inspect(err, { depth: null, maxArrayLength: null })
 }
 
+const wrapClass = base => {
+  const derived = function (...args) {
+    return new.target
+      ? Reflect.construct(base, args, new.target)
+      : Reflect.apply(base, this, args)
+  }
+  const bound = derived.bind()
+  const prototype = Object.create(Object.getPrototypeOf(base.prototype), {
+    ...Object.getOwnPropertyDescriptors(base.prototype),
+    constructor: {
+      ...Object.getOwnPropertyDescriptor(base.prototype, 'constructor'),
+      value: bound,
+    },
+  })
+  const descriptors = {
+    ...Object.getOwnPropertyDescriptors(base),
+    name: {
+      ...Object.getOwnPropertyDescriptor(base, 'name'),
+      value: base.name,
+    },
+    prototype: {
+      ...Object.getOwnPropertyDescriptor(base, 'prototype'),
+      value: prototype,
+    },
+  }
+  Object.defineProperties(derived, descriptors)
+  Object.defineProperties(bound, descriptors)
+  return bound
+}
+
 const run = async code => {
   const consoleOutput = []
   const outStream = Object.defineProperty(new Writable(), 'write', {
@@ -18,27 +50,30 @@ const run = async code => {
   })
   const vm = new VM({
     sandbox: {
-      Set,
-      Map,
-      Date,
-      WeakSet,
-      WeakMap,
-      Buffer,
-      ArrayBuffer,
-      SharedArrayBuffer,
-      Int8Array,
-      Uint8Array,
-      Uint8ClampedArray,
-      Int16Array,
-      Uint16Array,
-      Int32Array,
-      Uint32Array,
-      Float32Array,
-      Float64Array,
-      BigInt64Array,
-      BigUint64Array,
-      Atomics,
-      DataView,
+      Set: wrapClass(Set),
+      Map: wrapClass(Map),
+      Date: wrapClass(Date),
+      WeakSet: wrapClass(WeakSet),
+      WeakMap: wrapClass(WeakMap),
+      Buffer: wrapClass(Buffer),
+      ArrayBuffer: wrapClass(ArrayBuffer),
+      SharedArrayBuffer: wrapClass(SharedArrayBuffer),
+      Int8Array: wrapClass(Int8Array),
+      Uint8Array: wrapClass(Uint8Array),
+      Uint8ClampedArray: wrapClass(Uint8ClampedArray),
+      Int16Array: wrapClass(Int16Array),
+      Uint16Array: wrapClass(Uint16Array),
+      Int32Array: wrapClass(Int32Array),
+      Uint32Array: wrapClass(Uint32Array),
+      Float32Array: wrapClass(Float32Array),
+      Float64Array: wrapClass(Float64Array),
+      BigInt64Array: wrapClass(BigInt64Array),
+      BigUint64Array: wrapClass(BigUint64Array),
+      Atomics: Object.create(
+        Object.prototype,
+        Object.getOwnPropertyDescriptors(Atomics)
+      ),
+      DataView: wrapClass(DataView),
       console: new Console({
         stdout: outStream,
         stderr: outStream,
