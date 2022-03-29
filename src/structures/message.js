@@ -6,6 +6,7 @@ Message.prototype.sendDeletable = async function (content) {
   const reactionFilter = (reaction, user) =>
     reaction.emoji.name === wastebasket && user.id === this.author.id
   const messageFilter = receiveMessage => {
+    if (receiveMessage.author.id !== this.author.id) return false
     const num = parseInt(receiveMessage.content.trim())
     if (Number.isNaN(num)) return false
     if (num >= 0 && num <= 2) return true
