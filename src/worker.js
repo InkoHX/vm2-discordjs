@@ -20,24 +20,22 @@ const wrapClass = base => {
       : Reflect.apply(base, this, args)
   }
   const bound = derived.bind()
-  const prototype = Object.create(Object.getPrototypeOf(base.prototype), {
-    ...Object.getOwnPropertyDescriptors(base.prototype),
-    constructor: {
-      ...Object.getOwnPropertyDescriptor(base.prototype, 'constructor'),
-      value: bound,
-    },
-  })
   const descriptors = {
     ...Object.getOwnPropertyDescriptors(base),
-    name: {
-      ...Object.getOwnPropertyDescriptor(base, 'name'),
-      value: base.name,
-    },
     prototype: {
       ...Object.getOwnPropertyDescriptor(base, 'prototype'),
-      value: prototype,
+      value: Object.create(Object.getPrototypeOf(base.prototype), {
+        ...Object.getOwnPropertyDescriptors(base.prototype),
+        constructor: {
+          ...Object.getOwnPropertyDescriptor(base.prototype, 'constructor'),
+          value: bound,
+        },
+      }),
     },
   }
+  const superCtor = Object.getPrototypeOf(base)
+  Object.setPrototypeOf(derived, superCtor)
+  Object.setPrototypeOf(bound, superCtor)
   Object.defineProperties(derived, descriptors)
   Object.defineProperties(bound, descriptors)
   return bound
