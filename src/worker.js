@@ -13,30 +13,30 @@ function errorToString(err) {
   return 'Thrown: ' + inspect(err, { depth: null, maxArrayLength: null })
 }
 
-function wrapClass(base) {
-  const derived = function (...args) {
+function wrapClass(originalClass) {
+  const wrappingClass = function (...args) {
     return new.target
-      ? Reflect.construct(base, args, new.target)
-      : Reflect.apply(base, this, args)
+      ? Reflect.construct(originalClass, args, new.target)
+      : Reflect.apply(originalClass, this, args)
   }
-  const bound = derived.bind()
+  const bound = wrappingClass.bind()
   const descriptors = {
-    ...Object.getOwnPropertyDescriptors(base),
+    ...Object.getOwnPropertyDescriptors(originalClass),
     prototype: {
-      ...Object.getOwnPropertyDescriptor(base, 'prototype'),
-      value: Object.create(Object.getPrototypeOf(base.prototype), {
-        ...Object.getOwnPropertyDescriptors(base.prototype),
+      ...Object.getOwnPropertyDescriptor(originalClass, 'prototype'),
+      value: Object.create(Object.getPrototypeOf(originalClass.prototype), {
+        ...Object.getOwnPropertyDescriptors(originalClass.prototype),
         constructor: {
-          ...Object.getOwnPropertyDescriptor(base.prototype, 'constructor'),
+          ...Object.getOwnPropertyDescriptor(originalClass.prototype, 'constructor'),
           value: bound,
         },
       }),
     },
   }
-  const superCtor = Object.getPrototypeOf(base)
-  Object.setPrototypeOf(derived, superCtor)
-  Object.setPrototypeOf(bound, superCtor)
-  Object.defineProperties(derived, descriptors)
+  const baseClass = Object.getPrototypeOf(originalClass)
+  Object.setPrototypeOf(wrappingClass, baseClass)
+  Object.setPrototypeOf(bound, baseClass)
+  Object.defineProperties(wrappingClass, descriptors)
   Object.defineProperties(bound, descriptors)
   return bound
 }
