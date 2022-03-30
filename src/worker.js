@@ -27,7 +27,10 @@ function wrapClass(originalClass) {
       value: Object.create(Object.getPrototypeOf(originalClass.prototype), {
         ...Object.getOwnPropertyDescriptors(originalClass.prototype),
         constructor: {
-          ...Object.getOwnPropertyDescriptor(originalClass.prototype, 'constructor'),
+          ...Object.getOwnPropertyDescriptor(
+            originalClass.prototype,
+            'constructor'
+          ),
           value: bound,
         },
       }),
