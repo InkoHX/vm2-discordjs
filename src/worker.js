@@ -6,14 +6,14 @@ const { inspect } = require('util')
 const { Console } = console
 const { Writable } = require('stream')
 
-const errorToString = err => {
+function errorToString(err) {
   if (typeof err === 'object' && err instanceof Error) {
     return Error.prototype.toString.call(err)
   }
   return 'Thrown: ' + inspect(err, { depth: null, maxArrayLength: null })
 }
 
-const wrapClass = base => {
+function wrapClass(base) {
   const derived = function (...args) {
     return new.target
       ? Reflect.construct(base, args, new.target)
