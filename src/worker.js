@@ -53,7 +53,7 @@ const run = async code => {
       Date: wrapClass(Date),
       WeakSet: wrapClass(WeakSet),
       WeakMap: wrapClass(WeakMap),
-      Buffer: wrapClass(Buffer),
+      Buffer,
       ArrayBuffer: wrapClass(ArrayBuffer),
       SharedArrayBuffer: wrapClass(SharedArrayBuffer),
       Int8Array: wrapClass(Int8Array),
