@@ -75,21 +75,10 @@ function cloneFunction(original, clonedCache, bindThis) {
   const descriptors = Object.getOwnPropertyDescriptors(original)
   for (const key of Reflect.ownKeys(descriptors)) {
     const descriptor = descriptors[key]
-    if (key === 'prototype' && typeof descriptor.value === 'object') {
-      descriptor.value = cloneObject(descriptor.value, clonedCache, {
-        constructor: {
-          ...Object.getOwnPropertyDescriptor(descriptor.value, 'constructor'),
-          value: cloned,
-        },
-      })
-    } else {
-      if ('value' in descriptor)
-        descriptor.value = clone(descriptor.value, clonedCache)
-      if ('get' in descriptor)
-        descriptor.get = clone(descriptor.get, clonedCache)
-      if ('set' in descriptor)
-        descriptor.set = clone(descriptor.set, clonedCache)
-    }
+    if ('value' in descriptor)
+      descriptor.value = clone(descriptor.value, clonedCache)
+    if ('get' in descriptor) descriptor.get = clone(descriptor.get, clonedCache)
+    if ('set' in descriptor) descriptor.set = clone(descriptor.set, clonedCache)
     Object.defineProperty(cloned, key, descriptor)
     if (bindThis) Object.defineProperty(unbound, key, descriptor)
   }
