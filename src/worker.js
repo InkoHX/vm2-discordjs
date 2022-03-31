@@ -2,7 +2,7 @@
 
 const { worker } = require('workerpool')
 const { VM } = require('vm2')
-const { inspect, types } = require('util')
+const { inspect } = require('util')
 const { Console } = console
 const { Writable } = require('stream')
 
