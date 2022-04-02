@@ -13,6 +13,16 @@ const errorToString = err => {
   return 'Thrown: ' + inspect(err, { depth: null, maxArrayLength: null })
 }
 
+function cloneDescriptors(descriptors, clonedCache) {
+  Reflect.ownKeys(descriptors).forEach(key => {
+    const descriptor = descriptors[key]
+    if ('value' in descriptor)
+      descriptor.value = clone(descriptor.value, clonedCache)
+    if ('get' in descriptor) descriptor.get = clone(descriptor.get, clonedCache)
+    if ('set' in descriptor) descriptor.set = clone(descriptor.set, clonedCache)
+  })
+}
+
 function clone(value, clonedCache) {
   switch (typeof value) {
     case 'number':
@@ -30,30 +40,24 @@ function clone(value, clonedCache) {
   throw new TypeError('A value that is unknown type could not be cloned')
 }
 
-function cloneObject(original, clonedCache, overrides = {}) {
+const objProtoIgnore = Set.prototype.has.bind(new Set([Object.prototype, null]))
+function cloneObject(original, clonedCache) {
   if (clonedCache.has(original)) return clonedCache.get(original)
   const cloned = structuredClone(original)
   clonedCache.set(original, cloned)
   clonedCache.set(cloned, cloned)
   const proto = Object.getPrototypeOf(original)
-  if (![Object.prototype, null].includes(proto))
+  if (!objProtoIgnore(proto))
     Object.setPrototypeOf(cloned, clone(proto, clonedCache))
   const descriptors = Object.getOwnPropertyDescriptors(original)
-  for (const key of Reflect.ownKeys(descriptors)) {
-    if (Object.hasOwn(overrides, key)) {
-      Object.defineProperty(cloned, key, overrides[key])
-      continue
-    }
-    const descriptor = descriptors[key]
-    if ('value' in descriptor)
-      descriptor.value = clone(descriptor.value, clonedCache)
-    if ('get' in descriptor) descriptor.get = clone(descriptor.get, clonedCache)
-    if ('set' in descriptor) descriptor.set = clone(descriptor.set, clonedCache)
-    Object.defineProperty(cloned, key, descriptor)
-  }
+  cloneDescriptors(descriptors, clonedCache)
+  Object.defineProperties(cloned, descriptors)
   return cloned
 }
 
+const funcProtoIgnore = Set.prototype.has.bind(
+  new Set([Function.prototype, Object.prototype, null])
+)
 function cloneFunction(original, clonedCache, bindThis) {
   if (clonedCache.has(original)) return clonedCache.get(original)
   const inner = (thisArg, args, newTarget) =>
@@ -67,21 +71,15 @@ function cloneFunction(original, clonedCache, bindThis) {
   clonedCache.set(original, cloned)
   clonedCache.set(cloned, cloned)
   const proto = Object.getPrototypeOf(original)
-  if (![Function.prototype, Object.prototype, null].includes(proto)) {
+  if (!funcProtoIgnore(proto)) {
     const clonedProto = clone(proto, clonedCache)
     Object.setPrototypeOf(cloned, clonedProto)
     if (bindThis) Object.setPrototypeOf(unbound, clonedProto)
   }
   const descriptors = Object.getOwnPropertyDescriptors(original)
-  for (const key of Reflect.ownKeys(descriptors)) {
-    const descriptor = descriptors[key]
-    if ('value' in descriptor)
-      descriptor.value = clone(descriptor.value, clonedCache)
-    if ('get' in descriptor) descriptor.get = clone(descriptor.get, clonedCache)
-    if ('set' in descriptor) descriptor.set = clone(descriptor.set, clonedCache)
-    Object.defineProperty(cloned, key, descriptor)
-    if (bindThis) Object.defineProperty(unbound, key, descriptor)
-  }
+  cloneDescriptors(descriptors, clonedCache)
+  Object.defineProperties(cloned, descriptors)
+  if (bindThis) Object.defineProperties(unbound, descriptors)
   return cloned
 }
 
@@ -93,29 +91,34 @@ const run = async code => {
   const outStream = Object.defineProperty(new Writable(), 'write', {
     value: chunk => consoleOutput.push(chunk),
   })
+  console.time()
+  const clones = {
+    Set: cloneClass(Set),
+    Map: cloneClass(Map),
+    Date: cloneClass(Date),
+    WeakSet: cloneClass(WeakSet),
+    WeakMap: cloneClass(WeakMap),
+    ArrayBuffer: cloneClass(ArrayBuffer),
+    SharedArrayBuffer: cloneClass(SharedArrayBuffer),
+    Int8Array: cloneClass(Int8Array),
+    Uint8Array: cloneClass(Uint8Array),
+    Uint8ClampedArray: cloneClass(Uint8ClampedArray),
+    Int16Array: cloneClass(Int16Array),
+    Uint16Array: cloneClass(Uint16Array),
+    Int32Array: cloneClass(Int32Array),
+    Uint32Array: cloneClass(Uint32Array),
+    Float32Array: cloneClass(Float32Array),
+    Float64Array: cloneClass(Float64Array),
+    BigInt64Array: cloneClass(BigInt64Array),
+    BigUint64Array: cloneClass(BigUint64Array),
+    Atomics: cloneObject(Atomics, clonedCache),
+    DataView: cloneClass(DataView),
+  }
+  console.timeEnd()
   const vm = new VM({
     sandbox: {
-      Set: cloneClass(Set),
-      Map: cloneClass(Map),
-      Date: cloneClass(Date),
-      WeakSet: cloneClass(WeakSet),
-      WeakMap: cloneClass(WeakMap),
+      ...clones,
       Buffer,
-      ArrayBuffer: cloneClass(ArrayBuffer),
-      SharedArrayBuffer: cloneClass(SharedArrayBuffer),
-      Int8Array: cloneClass(Int8Array),
-      Uint8Array: cloneClass(Uint8Array),
-      Uint8ClampedArray: cloneClass(Uint8ClampedArray),
-      Int16Array: cloneClass(Int16Array),
-      Uint16Array: cloneClass(Uint16Array),
-      Int32Array: cloneClass(Int32Array),
-      Uint32Array: cloneClass(Uint32Array),
-      Float32Array: cloneClass(Float32Array),
-      Float64Array: cloneClass(Float64Array),
-      BigInt64Array: cloneClass(BigInt64Array),
-      BigUint64Array: cloneClass(BigUint64Array),
-      Atomics: cloneObject(Atomics, clonedCache),
-      DataView: cloneClass(DataView),
       console: new Console({
         stdout: outStream,
         stderr: outStream,
