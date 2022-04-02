@@ -6,7 +6,7 @@ const { inspect } = require('util')
 const { Console } = console
 const { Writable } = require('stream')
 
-function errorToString(err) {
+const errorToString = err => {
   if (typeof err === 'object' && err instanceof Error) {
     return Error.prototype.toString.call(err)
   }
