@@ -1,19 +1,32 @@
+'use strict'
+
 const { worker } = require('workerpool')
 const { VM } = require('vm2')
-const {
-  inspect,
-  types: { isUint8Array },
-} = require('node:util')
+const { inspect } = require('node:util')
+const { isUint8Array } = require('node:util/types')
+const { Writable } = require('node:stream')
+const path = require('node:path')
+const { readFileSync } = require('node:fs')
 const { readonlyObjects, constructors } = require('./readonly')
 const { Console } = console
-const { Writable } = require('node:stream')
-const { isEncoding, isBuffer } = Buffer
-const bufferToString = Function.prototype.call.bind(Buffer.prototype.toString)
-const vmSetupScript = require('node:fs').readFileSync(
-  require('node:path').join(__dirname, './setup.js'),
-  'utf8'
-)
+const { isEncoding, from: makeBufferFrom } = Buffer
+const { call } = Function.prototype
+const { construct } = Reflect
+const {
+  getPrototypeOf,
+  getOwnPropertyDescriptor,
+  getOwnPropertyDescriptors,
+  defineProperty,
+} = Object
 
+const primitives = ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']
+const vmSetupScript = readFileSync(path.join(__dirname, './setup.js'), 'utf8')
+const typedArrayPrototype = getPrototypeOf(Uint8Array.prototype)
+const typedArrayProtoDescriptors =
+  getOwnPropertyDescriptors(typedArrayPrototype)
+const arrayBuffer = call.bind(typedArrayProtoDescriptors.buffer.get)
+const offset = call.bind(typedArrayProtoDescriptors.byteOffset.get)
+const length = call.bind(typedArrayProtoDescriptors.byteLength.get)
 const errorToString = err => {
   if (typeof err === 'object' && err instanceof Error)
     return Error.prototype.toString.call(err)
@@ -22,7 +35,7 @@ const errorToString = err => {
 
 const run = async code => {
   const consoleOutput = []
-  const outStream = Object.defineProperty(new Writable(), 'write', {
+  const outStream = defineProperty(new Writable(), 'write', {
     value(chunk, encoding, callback) {
       switch (typeof encoding) {
         case 'function':
@@ -34,18 +47,13 @@ const run = async code => {
           if (!isEncoding(encoding))
             throw new TypeError(`Unknown encoding '${encoding}'`)
       }
-      switch (true) {
-        case isUint8Array(chunk):
-          chunk = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
-        case isBuffer(chunk):
-          chunk = bufferToString(chunk, encoding)
-        case typeof chunk === 'string':
-          break
-        default:
-          throw new TypeError(
-            'Invalid chunk type. The chunk must be a string, a Buffer or a Uint8Array'
-          )
-      }
+      if (typeof chunk === 'string') chunk = makeBufferFrom(chunk, encoding)
+      else if (isUint8Array(chunk))
+        chunk = makeBufferFrom(arrayBuffer(chunk), offset(chunk), length(chunk))
+      else
+        throw new TypeError(
+          'Invalid chunk type. The chunk must be a string, a Buffer or a Uint8Array'
+        )
 
       consoleOutput.push(chunk)
 
@@ -64,18 +72,20 @@ const run = async code => {
     'console'
   )
 
-  for (const type of ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']) {
+  primitives.forEach(type => {
     const prototype = vm.run(type + '.prototype')
-    const valueOf = Function.prototype.call.bind(prototype.valueOf)
-    Object.defineProperty(prototype, inspect.custom, {
+    const valueOf = call.bind(prototype.valueOf)
+    defineProperty(prototype, inspect.custom, {
       value() {
+        if (typeof this !== 'object') return this
         try {
           return `[${type}: ${inspect(valueOf(this))}]`
-        } catch {}
-        return this
+        } catch {
+          return this
+        }
       },
     })
-  }
+  })
 
   const proxify = vm.run(vmSetupScript)
 
