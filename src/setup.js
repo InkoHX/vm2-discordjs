@@ -2,13 +2,38 @@
 
 {
   const { call } = Function.prototype
-  const { defineProperty } = Object
+  const { defineProperty, getOwnPropertyDescriptors } = Object
   const inspectCustom = Symbol.for('nodejs.util.inspect.custom')
 
   {
     const { prototype } = RegExp
+    const descriptors = getOwnPropertyDescriptors(prototype)
+    const source = call.bind(descriptors.source.get)
+    const hasIndices = call.bind(descriptors.hasIndices.get)
+    const global = call.bind(descriptors.global.get)
+    const ignoreCase = call.bind(descriptors.ignoreCase.get)
+    const multiline = call.bind(descriptors.multiline.get)
+    const dotAll = call.bind(descriptors.dotAll.get)
+    const unicode = call.bind(descriptors.unicode.get)
+    const sticky = call.bind(descriptors.sticky.get)
+    // RegExp#toString や RegExp#flags だと プロパティーアクセスが行われるため、副作用が発生する可能性がある。
+    // それを避けるため、ひとつずつフラグを確認する。
     defineProperty(prototype, inspectCustom, {
-      value: prototype.toString,
+      value() {
+        try {
+          let str = `/${source(this)}/`
+          if (hasIndices(this)) str += 'd'
+          if (global(this)) str += 'g'
+          if (ignoreCase(this)) str += 'i'
+          if (multiline(this)) str += 'm'
+          if (dotAll(this)) str += 's'
+          if (unicode(this)) str += 'u'
+          if (sticky(this)) str += 'y'
+          return str
+        } catch {
+          return this
+        }
+      },
     })
   }
 
