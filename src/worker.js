@@ -60,6 +60,7 @@ const run = async code => {
       if (typeof callback === 'function') callback()
     },
   })
+
   const vm = new VM()
 
   defineProperty(vm.sandbox, 'Atomics', {
@@ -106,7 +107,7 @@ const run = async code => {
     vm._addProtoMapping(prototype, prototype)
 
     // Set class constructor to global
-    ctor = prototype.constructor = proxify(
+    prototype.constructor = proxify(
       ctor,
       (_, args, newTarget) => construct(ctor, args, newTarget),
       key => {
@@ -120,19 +121,17 @@ const run = async code => {
       writeble: true,
       enumerable: false,
       configurable: true,
-      value: ctor,
+      value: prototype.constructor,
     })
   })
 
+  let result = '<empty>'
   try {
-    const result = await vm.run(code)
-    return [
-      consoleOutput.join('').trim(),
-      inspect(result, { depth: null, maxArrayLength: null }),
-    ]
+    result = inspect(await vm.run(code), { depth: null, maxArrayLength: null })
   } catch (ex) {
-    return [consoleOutput.join('').trim(), errorToString(ex)]
+    result = errorToString(ex)
   }
+  return [consoleOutput.join('').trim(), result]
 }
 
 worker({ run })
