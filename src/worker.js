@@ -62,15 +62,24 @@ const run = async code => {
   })
   const vm = new VM()
 
-  vm.freeze(Atomics, 'Atomics')
-  vm.freeze(
-    new Console({
-      stdout: outStream,
-      stderr: outStream,
-      inspectOptions: { depth: null, maxArrayLength: null },
-    }),
-    'console'
-  )
+  defineProperty(vm.sandbox, 'Atomics', {
+    writeble: true,
+    enumerable: false,
+    configurable: true,
+    value: vm.readonly(Atomics),
+  })
+  defineProperty(vm.sandbox, 'console', {
+    writeble: true,
+    enumerable: false,
+    configurable: true,
+    value: vm.readonly(
+      new Console({
+        stdout: outStream,
+        stderr: outStream,
+        inspectOptions: { depth: null, maxArrayLength: null },
+      })
+    ),
+  })
 
   primitives.forEach(type => {
     const prototype = vm.run(type + '.prototype')
@@ -109,6 +118,7 @@ const run = async code => {
     )
     defineProperty(vm.sandbox, name, {
       writeble: true,
+      enumerable: false,
       configurable: true,
       value: ctor,
     })

@@ -5,6 +5,20 @@
   const { defineProperty, getOwnPropertyDescriptors } = Object
   const inspectCustom = Symbol.for('nodejs.util.inspect.custom')
 
+  defineProperty(this, 'Function', {
+    value: Function,
+    writable: true,
+    enumerable: false,
+    configurable: true,
+  })
+
+  defineProperty(this, 'eval', {
+    value: eval,
+    writable: true,
+    enumerable: false,
+    configurable: true,
+  })
+
   {
     const { prototype } = RegExp
     const descriptors = getOwnPropertyDescriptors(prototype)
