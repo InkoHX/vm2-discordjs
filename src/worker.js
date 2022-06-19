@@ -45,14 +45,14 @@ const run = async code => {
           break
         default:
           if (!isEncoding(encoding))
-            throw new TypeError(`Unknown encoding '${encoding}'`)
+            throw new TypeError('Unknown encoding: ' + encoding)
       }
       if (typeof chunk === 'string') chunk = makeBufferFrom(chunk, encoding)
       else if (isUint8Array(chunk))
         chunk = makeBufferFrom(arrayBuffer(chunk), offset(chunk), length(chunk))
       else
         throw new TypeError(
-          'Invalid chunk type. The chunk must be a string, a Buffer or a Uint8Array'
+          'The "chunk" argument must be of type string or an instance of Buffer or Uint8Array'
         )
 
       consoleOutput.push(chunk)
