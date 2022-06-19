@@ -4,6 +4,7 @@ const {
   inspect,
   types: { isUint8Array },
 } = require('node:util')
+const { readonlyObjects, constructors } = require('./readonly')
 const { Console } = console
 const { Writable } = require('node:stream')
 const { isEncoding, isBuffer } = Buffer
@@ -78,57 +79,30 @@ const run = async code => {
 
   const proxify = vm.run(vmSetupScript)
 
-  for (const constructor of [
-    Set,
-    Map,
-    WeakSet,
-    WeakMap,
-    Buffer,
-    ArrayBuffer,
-    SharedArrayBuffer,
-    Int8Array,
-    Uint8Array,
-    Uint8ClampedArray,
-    Int16Array,
-    Uint16Array,
-    Int32Array,
-    Uint32Array,
-    Float32Array,
-    Float64Array,
-    BigInt64Array,
-    BigUint64Array,
-    DataView,
-  ]) {
-    // Mark the class constructor readonly
-    vm.readonly(constructor)
-
-    // Mark the prototype and its properties readonly
-    for (let o = constructor.prototype; o; o = Object.getPrototypeOf(o)) {
-      vm.readonly(o)
-      Reflect.ownKeys(o).forEach(k => {
-        try {
-          vm.readonly(o[k])
-        } catch {
-          // Ignore errors
-        }
-      })
-    }
+  readonlyObjects.forEach(obj => vm.readonly(obj))
+  constructors.forEach(ctor => {
+    const { prototype, name } = ctor
 
     // Add prototype mapping
-    vm._addProtoMapping(constructor.prototype, constructor.prototype)
+    vm._addProtoMapping(prototype, prototype)
 
     // Set class constructor to global
-    vm.sandbox[constructor.name] = constructor.prototype.constructor = proxify(
-      constructor,
-      (_, args, newTarget) => Reflect.construct(constructor, args, newTarget),
+    ctor = prototype.constructor = proxify(
+      ctor,
+      (_, args, newTarget) => construct(ctor, args, newTarget),
       key => {
-        for (let o = constructor; o; o = Reflect.getPrototypeOf(o)) {
-          const getter = Reflect.getOwnPropertyDescriptor(o, key)?.get
+        for (let o = ctor; o; o = getPrototypeOf(o)) {
+          const getter = getOwnPropertyDescriptor(o, key)?.get
           if (getter) return getter
         }
       }
     )
-  }
+    defineProperty(vm.sandbox, name, {
+      writeble: true,
+      configurable: true,
+      value: ctor,
+    })
+  })
 
   try {
     const result = await vm.run(code)
