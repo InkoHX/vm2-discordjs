@@ -25,7 +25,7 @@ const constructors = [
 ]
 const iterableObjects = [new Set(), new Map(), []]
 
-constructors.forEach(constructor => {
+constructors.concat([Array, Number, Boolean, String, BigInt, Symbol, Error, Function]).forEach(constructor => {
   readonlySet.add(constructor)
 
   // Mark the class's prototype and its properties as readonly
