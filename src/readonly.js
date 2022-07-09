@@ -25,21 +25,23 @@ const constructors = [
 ]
 const iterableObjects = [new Set(), new Map(), []]
 
-constructors.concat([Array, Number, Boolean, String, BigInt, Symbol, Error, Function]).forEach(constructor => {
-  readonlySet.add(constructor)
+constructors
+  .concat([Array, Number, Boolean, String, BigInt, Symbol, Error, Function])
+  .forEach(constructor => {
+    readonlySet.add(constructor)
 
-  // Mark the class's prototype and its properties as readonly
-  for (let o = constructor.prototype; o; o = getPrototypeOf(o)) {
-    readonlySet.add(o)
-    ownKeys(o).forEach(k => {
-      try {
-        readonlySet.add(o[k])
-      } catch {
-        // Ignore errors
-      }
-    })
-  }
-})
+    // Mark the class's prototype and its properties as readonly
+    for (let o = constructor.prototype; o; o = getPrototypeOf(o)) {
+      readonlySet.add(o)
+      ownKeys(o).forEach(k => {
+        try {
+          readonlySet.add(o[k])
+        } catch {
+          // Ignore errors
+        }
+      })
+    }
+  })
 
 iterableObjects.forEach(obj => {
   // Mark the iterator's prototype and its properties as readonly
