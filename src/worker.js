@@ -1,18 +1,32 @@
+'use strict'
+
 const { worker } = require('workerpool')
 const { VM } = require('vm2')
-const {
-  inspect,
-  types: { isUint8Array },
-} = require('node:util')
-const { Console } = console
+const { inspect } = require('node:util')
+const { isUint8Array } = require('node:util/types')
 const { Writable } = require('node:stream')
-const { isEncoding, isBuffer } = Buffer
-const bufferToString = Function.prototype.call.bind(Buffer.prototype.toString)
-const vmSetupScript = require('node:fs').readFileSync(
-  require('node:path').join(__dirname, './setup.js'),
-  'utf8'
-)
+const path = require('node:path')
+const { readFileSync } = require('node:fs')
+const { readonlyObjects, constructors } = require('./readonly')
+const { Console } = console
+const { isEncoding, from: makeBufferFrom } = Buffer
+const { call } = Function.prototype
+const { construct } = Reflect
+const {
+  getPrototypeOf,
+  getOwnPropertyDescriptor,
+  getOwnPropertyDescriptors,
+  defineProperty,
+} = Object
 
+const primitives = ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']
+const vmSetupScript = readFileSync(path.join(__dirname, './setup.js'), 'utf8')
+const typedArrayPrototype = getPrototypeOf(Uint8Array.prototype)
+const typedArrayProtoDescriptors =
+  getOwnPropertyDescriptors(typedArrayPrototype)
+const arrayBuffer = call.bind(typedArrayProtoDescriptors.buffer.get)
+const offset = call.bind(typedArrayProtoDescriptors.byteOffset.get)
+const length = call.bind(typedArrayProtoDescriptors.byteLength.get)
 const errorToString = err => {
   if (typeof err === 'object' && err instanceof Error)
     return Error.prototype.toString.call(err)
@@ -21,7 +35,7 @@ const errorToString = err => {
 
 const run = async code => {
   const consoleOutput = []
-  const outStream = Object.defineProperty(new Writable(), 'write', {
+  const outStream = defineProperty(new Writable(), 'write', {
     value(chunk, encoding, callback) {
       switch (typeof encoding) {
         case 'function':
@@ -31,114 +45,93 @@ const run = async code => {
           break
         default:
           if (!isEncoding(encoding))
-            throw new TypeError(`Unknown encoding '${encoding}'`)
+            throw new TypeError('Unknown encoding: ' + encoding)
       }
-      switch (true) {
-        case isUint8Array(chunk):
-          chunk = Buffer.from(chunk.buffer, chunk.byteOffset, chunk.byteLength)
-        case isBuffer(chunk):
-          chunk = bufferToString(chunk, encoding)
-        case typeof chunk === 'string':
-          break
-        default:
-          throw new TypeError(
-            'Invalid chunk type. The chunk must be a string, a Buffer or a Uint8Array'
-          )
-      }
+      if (typeof chunk === 'string') chunk = makeBufferFrom(chunk, encoding)
+      else if (isUint8Array(chunk))
+        chunk = makeBufferFrom(arrayBuffer(chunk), offset(chunk), length(chunk))
+      else
+        throw new TypeError(
+          'The "chunk" argument must be of type string or an instance of Buffer or Uint8Array'
+        )
 
       consoleOutput.push(chunk)
 
       if (typeof callback === 'function') callback()
     },
   })
+
   const vm = new VM()
 
-  vm.freeze(Atomics, 'Atomics')
-  vm.freeze(
-    new Console({
-      stdout: outStream,
-      stderr: outStream,
-      inspectOptions: { depth: null, maxArrayLength: null },
-    }),
-    'console'
-  )
+  defineProperty(vm.sandbox, 'Atomics', {
+    writeble: true,
+    enumerable: false,
+    configurable: true,
+    value: vm.readonly(Atomics),
+  })
+  defineProperty(vm.sandbox, 'console', {
+    writeble: true,
+    enumerable: false,
+    configurable: true,
+    value: vm.readonly(
+      new Console({
+        stdout: outStream,
+        stderr: outStream,
+        inspectOptions: { depth: null, maxArrayLength: null },
+      })
+    ),
+  })
 
-  for (const type of ['Number', 'String', 'Boolean', 'Symbol', 'BigInt']) {
+  primitives.forEach(type => {
     const prototype = vm.run(type + '.prototype')
-    const valueOf = Function.prototype.call.bind(prototype.valueOf)
-    Object.defineProperty(prototype, inspect.custom, {
+    const valueOf = call.bind(prototype.valueOf)
+    defineProperty(prototype, inspect.custom, {
       value() {
+        if (typeof this !== 'object') return this
         try {
           return `[${type}: ${inspect(valueOf(this))}]`
-        } catch {}
-        return this
+        } catch {
+          return this
+        }
       },
     })
-  }
+  })
 
   const proxify = vm.run(vmSetupScript)
 
-  for (const constructor of [
-    Set,
-    Map,
-    WeakSet,
-    WeakMap,
-    Buffer,
-    ArrayBuffer,
-    SharedArrayBuffer,
-    Int8Array,
-    Uint8Array,
-    Uint8ClampedArray,
-    Int16Array,
-    Uint16Array,
-    Int32Array,
-    Uint32Array,
-    Float32Array,
-    Float64Array,
-    BigInt64Array,
-    BigUint64Array,
-    DataView,
-  ]) {
-    // Mark the class constructor readonly
-    vm.readonly(constructor)
-
-    // Mark the prototype and its properties readonly
-    for (let o = constructor.prototype; o; o = Object.getPrototypeOf(o)) {
-      vm.readonly(o)
-      Reflect.ownKeys(o).forEach(k => {
-        try {
-          vm.readonly(o[k])
-        } catch {
-          // Ignore errors
-        }
-      })
-    }
+  readonlyObjects.forEach(obj => vm.readonly(obj))
+  constructors.forEach(ctor => {
+    const { prototype, name } = ctor
 
     // Add prototype mapping
-    vm._addProtoMapping(constructor.prototype, constructor.prototype)
+    vm._addProtoMapping(prototype, prototype)
 
     // Set class constructor to global
-    vm.sandbox[constructor.name] = constructor.prototype.constructor = proxify(
-      constructor,
-      (_, args, newTarget) => Reflect.construct(constructor, args, newTarget),
+    prototype.constructor = proxify(
+      ctor,
+      (_, args, newTarget) => construct(ctor, args, newTarget),
       key => {
-        for (let o = constructor; o; o = Reflect.getPrototypeOf(o)) {
-          const getter = Reflect.getOwnPropertyDescriptor(o, key)?.get
+        for (let o = ctor; o; o = getPrototypeOf(o)) {
+          const getter = getOwnPropertyDescriptor(o, key)?.get
           if (getter) return getter
         }
       }
     )
-  }
+    defineProperty(vm.sandbox, name, {
+      writeble: true,
+      enumerable: false,
+      configurable: true,
+      value: prototype.constructor,
+    })
+  })
 
+  let result = '<empty>'
   try {
-    const result = await vm.run(code)
-    return [
-      consoleOutput.join('').trim(),
-      inspect(result, { depth: null, maxArrayLength: null }),
-    ]
+    result = inspect(await vm.run(code), { depth: null, maxArrayLength: null })
   } catch (ex) {
-    return [consoleOutput.join('').trim(), errorToString(ex)]
+    result = errorToString(ex)
   }
+  return [consoleOutput.join('').trim(), result]
 }
 
 worker({ run })
