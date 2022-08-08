@@ -1,18 +1,24 @@
 require('./structures/message')
 
-const { Client, MessageAttachment, Intents, Formatters } = require('discord.js')
+const {
+  Client,
+  AttachmentBuilder,
+  GatewayIntentBits: {
+    Guilds,
+    GuildMessages,
+    GuildMessageReactions,
+    MessageContent,
+  },
+  bold,
+  codeBlock,
+} = require('discord.js')
 const path = require('path')
 const pool = require('workerpool').pool(path.join(__dirname, './worker.js'), {
   workerType: 'process',
 })
 
-const intents =
-  Intents.FLAGS.GUILDS |
-  Intents.FLAGS.GUILD_MESSAGES |
-  Intents.FLAGS.GUILD_MESSAGE_REACTIONS
-
 const client = new Client({
-  intents,
+  intents: [Guilds, GuildMessages, GuildMessageReactions, MessageContent],
   presence: {
     activities: [
       {
@@ -27,22 +33,24 @@ const codeBlockRegex = /^`{3}(?<language>[a-z]+)\n(?<code>[\s\S]+)\n`{3}$/mu
 const languages = ['js', 'javascript']
 const toMessageOptions = (consoleOutput, result) => {
   if (consoleOutput.split('\n').length <= 100) {
-    let wrapped = Formatters.codeBlock('js', result.replaceAll('`', '`\u200b'))
+    let wrapped = codeBlock('js', result.replaceAll('`', '`\u200b'))
     if (consoleOutput) {
       wrapped =
-        Formatters.bold('コンソール') +
-        Formatters.codeBlock('js', consoleOutput.replaceAll('`', '`\u200b')) +
+        bold('コンソール') +
+        codeBlock('js', consoleOutput.replaceAll('`', '`\u200b')) +
         '\n' +
-        Formatters.bold('結果') +
+        bold('結果') +
         wrapped
     }
     if (wrapped.length <= 2000)
       return { content: wrapped, allowedMentions: { repliedUser: true } }
   }
-  const files = [new MessageAttachment(Buffer.from(result), 'result.txt')]
+  const files = [
+    new AttachmentBuilder(Buffer.from(result), { name: 'result.txt' }),
+  ]
   if (consoleOutput)
     files.unshift(
-      new MessageAttachment(Buffer.from(consoleOutput), 'console.txt')
+      new AttachmentBuilder(Buffer.from(consoleOutput), { name: 'console.txt' })
     )
   return {
     content: '実行結果が長すぎるのでテキストファイルに出力しました。',
@@ -70,7 +78,7 @@ client.on('messageCreate', message => {
     .then(([consoleOutput, result]) =>
       message.sendDeletable(toMessageOptions(consoleOutput, result))
     )
-    .catch(error => message.sendDeletable(Formatters.codeBlock('js', error)))
+    .catch(error => message.sendDeletable(codeBlock('js', error)))
 })
 
 client.login().catch(console.error)
