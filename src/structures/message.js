@@ -1,4 +1,4 @@
-const { Message, MessageEmbed } = require('discord.js')
+const { Message, EmbedBuilder } = require('discord.js')
 
 Message.prototype.sendDeletable = async function (content) {
   const reply = await this.reply(content)
@@ -38,8 +38,8 @@ Message.prototype.sendDeletable = async function (content) {
 
     const question = await this.channel.send({
       embeds: [
-        new MessageEmbed()
-          .setColor('YELLOW')
+        new EmbedBuilder()
+          .setColor('Yellow')
           .setTitle('削除方法を選択してください(数字)')
           .setDescription(
             [
@@ -60,6 +60,12 @@ Message.prototype.sendDeletable = async function (content) {
         question.delete(),
         input.delete(),
         this.delete(),
+      ])
+
+    if (typeof input === 'number')
+      return Promise.all([
+        reaction.users.remove(this.author),
+        question.delete(),
       ])
 
     await Promise.all([
